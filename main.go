@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"metasfin.tech/controllers" // Import your controllers package
 	"metasfin.tech/models"
@@ -10,6 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	// Adicione esta linha
+	"github.com/gin-contrib/cors" // Adicione esta linha
 )
 
 // No need for a global DB here in main.go if you're assigning directly to controllers.DB
@@ -31,6 +35,15 @@ func main() {
 	// Inicializa um novo "engine" (motor) do Gin.
 	// O "Default" inclui middlewares como logger e recovery.
 	router := gin.Default()
+
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	// Define uma rota GET para o caminho "/".
 	router.GET("/", func(c *gin.Context) {
