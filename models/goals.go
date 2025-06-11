@@ -7,4 +7,6 @@ type Goal struct {
 	Value       int    `json:"value"`
 	Balance     int    `json:"balance"`
 	UserID      uint   `json:"user_id"`
+	Active      bool   `json:"active"`
+	Completed   bool   `json:"completed"`
 }
