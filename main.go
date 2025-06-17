@@ -61,6 +61,8 @@ func main() {
 	router.PUT("/api/goals/:id", controllers.UpdateGoal)
 	router.DELETE("/api/goals/:id", controllers.DeleteGoal)
 
+	router.POST("/api/goals/deposit/:id", controllers.AddMoneyToGoal)
+
 	log.Printf("Servidor Gin rodando na porta :8080")
 	router.Run(":8080")
 }
