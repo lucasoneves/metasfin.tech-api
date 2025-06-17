@@ -35,8 +35,7 @@ func CreateGoal(c *gin.Context) {
 
 func GetGoals(c *gin.Context) {
 	var goals []models.Goal
-	DB.Find(&goals)
-	result := DB.Find(&goals)
+	result := DB.Find(&goals) // Busca todas as metas
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar metas"})
 		return
@@ -124,23 +123,65 @@ func DeleteGoal(c *gin.Context) {
 	// DB.Delete(&goal, id) realiza um "soft delete" se a struct tiver gorm.DeletedAt.
 	// Ele simplesmente preenche o campo DeletedAt em vez de remover o registro.
 	result := DB.Delete(&goal, id)
+	// É importante converter 'id' (uint64) para uint, que é o tipo do ID na struct GormModel.
+	// result := DB.Delete(&models.Goal{}, uint(id)) // Alternativamente, passe o tipo e o ID diretamente.
 
-	if result.Error == nil {
-		// Retorna status 204 No Content para indicar sucesso na exclusão sem corpo de resposta.
-		c.JSON(http.StatusNoContent, gin.H{
-			"message": "Meta deletada com sucesso",
-		})
-		return
-	} else {
+	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao deletar meta"})
+		return
 	}
 
-	// result.RowsAffected informa quantas linhas foram afetadas.
-	// Se 0 linhas foram afetadas, significa que a meta com o ID não foi encontrada.
 	if result.RowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Meta não encontrada para deletar"})
 		return
-
 	}
 
+	// Retorna status 204 No Content para indicar sucesso na exclusão sem corpo de resposta.
+	c.Status(http.StatusNoContent)
+}
+
+// AddMoneyRequest define a estrutura para o corpo da requisição ao adicionar dinheiro a uma meta.
+type AddMoneyRequest struct {
+	Amount int `json:"amount" binding:"required,gt=0"` // 'binding:"required,gt=0"' garante que o valor seja positivo.
+}
+
+func AddMoneyToGoal(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	var req AddMoneyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dados inválidos: " + err.Error()})
+		return
+	}
+
+	var existingGoal models.Goal
+	// Busca a meta pelo ID. É importante converter 'id' (uint64) para uint.
+	if result := DB.First(&existingGoal, uint(id)); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Meta não encontrada"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar meta"})
+		}
+		return
+	}
+
+	existingGoal.Balance += req.Amount
+
+	// Verifica se a meta foi concluída
+	if existingGoal.Balance >= existingGoal.Value {
+		existingGoal.Completed = true
+		// Opcional: você pode querer definir existingGoal.Active = false aqui
+	}
+
+	if result := DB.Save(&existingGoal); result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao atualizar saldo da meta"})
+		return
+	}
+
+	c.JSON(http.StatusOK, existingGoal)
 }
