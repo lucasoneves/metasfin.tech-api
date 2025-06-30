@@ -1,0 +1,10 @@
+# Ignore o arquivo Go que está causando o erro (se for temporário ou não utilizado)
+db.go
+
+# Ignore arquivos e diretórios de controle de versão
+.git
+.gitignore
+
+# Ignore arquivos de configuração de IDEs
+.vscode/
+.idea/

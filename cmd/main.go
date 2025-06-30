@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"metasfin.tech/controllers" // Import your controllers package
@@ -69,17 +71,17 @@ func main() {
 
 // initDatabase inicializa a conexão com o PostgreSQL usando GORM.
 func initDatabase() {
-	// dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=America/Sao_Paulo",
-	//  os.Getenv("DB_HOST"), // Ex: "localhost" quando rodando via Docker na mesma máquina
-	//  os.Getenv("DB_USER"),
-	//  os.Getenv("DB_PASSWORD"),
-	//  os.Getenv("DB_NAME"),
-	//  os.Getenv("DB_PORT"),
-	// )
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=America/Sao_Paulo",
+		os.Getenv("DATABASE_HOST"), // Será 'db' quando rodando via Docker
+		os.Getenv("DATABASE_USER"),
+		os.Getenv("DATABASE_PASSWORD"),
+		os.Getenv("DATABASE_NAME"),
+		os.Getenv("DATABASE_PORT"),
+	)
 
 	// Para facilitar o desenvolvimento local sem precisar configurar env vars no terminal,
 	// você pode usar valores fixos temporariamente (descomente a linha abaixo):
-	dsn := "host=localhost user=user password=admin123 dbname=metasfin.tech port=5432 sslmode=disable TimeZone=America/Sao_Paulo"
+	// dsn := "host=localhost user=user password=admin123 dbname=metasfin_tech port=5432 sslmode=disable TimeZone=America/Sao_Paulo"
 
 	var err error
 	// Assign the opened DB connection directly to controllers.DB

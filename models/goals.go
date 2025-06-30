@@ -4,7 +4,7 @@ type Goal struct {
 	GormModel
 	Title       string `json:"title"`
 	Description string `json:"description"`
-	Value       int    `json:"value"`
+	TargetValue int    `json:"target_value"`
 	Balance     int    `json:"balance"`
 	UserID      uint   `json:"user_id"`
 	Active      bool   `json:"active"`
