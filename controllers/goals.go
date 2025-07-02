@@ -121,7 +121,7 @@ func DeleteGoal(c *gin.Context) {
 }
 
 type AddMoneyRequest struct {
-	Amount int `json:"amount" binding:"required,gt=0"`
+	Amount float64 `json:"amount" binding:"required,gt=0"`
 }
 
 func AddMoneyToGoal(c *gin.Context) {
