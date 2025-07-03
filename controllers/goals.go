@@ -11,6 +11,10 @@ import (
 
 var DB *gorm.DB
 
+type AddMoneyRequest struct {
+	Amount float64 `json:"amount" binding:"required,gt=0"`
+}
+
 func CreateGoal(c *gin.Context) {
 	var newGoal models.Goal
 
@@ -120,10 +124,6 @@ func DeleteGoal(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-type AddMoneyRequest struct {
-	Amount float64 `json:"amount" binding:"required,gt=0"`
-}
-
 func AddMoneyToGoal(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -160,4 +160,14 @@ func AddMoneyToGoal(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, existingGoal)
+}
+
+func GetGoalsInfoDashboard(c *gin.Context) {
+	var totalOfChallenges = 3
+	var totalBalance = 240.40
+	c.JSON(http.StatusOK, gin.H{
+		"message":          "Sucesso",
+		"total_challenges": totalOfChallenges,
+		"total_balance":    totalBalance,
+	})
 }
