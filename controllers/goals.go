@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -163,11 +164,22 @@ func AddMoneyToGoal(c *gin.Context) {
 }
 
 func GetGoalsInfoDashboard(c *gin.Context) {
-	var totalOfChallenges = 3
-	var totalBalance = 240.40
+	var count int64
+	var totalBalance float64
+	result := DB.Model(&models.Goal{}).Count(&count)
+	balanceResult := DB.Model(&models.Goal{}).Select("SUM(balance)").Row().Scan(&totalBalance)
+
+	if result.Error != nil {
+		log.Fatalf("Error counting goals: %v", result.Error)
+	}
+
+	if balanceResult != nil {
+		log.Fatalf("Erro ao escanear o resultado da soma: %v", balanceResult)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":          "Sucesso",
-		"total_challenges": totalOfChallenges,
+		"total_challenges": count,
 		"total_balance":    totalBalance,
 	})
 }
