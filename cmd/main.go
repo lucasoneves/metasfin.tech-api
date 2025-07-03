@@ -46,8 +46,6 @@ func main() {
 
 	// --- Rotas CRUD para Metas (Goals) ---
 
-	// GET /goals - Lista todas as metas
-	router.GET("/api/goals-info", controllers.GetGoalsInfoDashboard)
 	router.GET("/api/goals", controllers.GetGoals)
 	router.GET("/api/goals/:id", controllers.GetGoalByID)
 	router.POST("/api/goals", controllers.CreateGoal)
@@ -56,6 +54,7 @@ func main() {
 
 	router.POST("/api/goals/deposit/:id", controllers.AddMoneyToGoal)
 
+	router.GET("/api/goals/info", controllers.GetGoalsInfoDashboard)
 	log.Printf("Servidor Gin rodando na porta :8080")
 	router.Run(":8080")
 }
