@@ -7,35 +7,25 @@ import (
 	"os"
 	"time"
 
-	"metasfin.tech/controllers" // Import your controllers package
+	"metasfin.tech/controllers"
 	"metasfin.tech/models"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	// Adicione esta linha
-	"github.com/gin-contrib/cors" // Adicione esta linha
+	"github.com/gin-contrib/cors"
 )
 
-// No need for a global DB here in main.go if you're assigning directly to controllers.DB
-// var DB *gorm.DB // You can remove this line!
-
 func main() {
-	// Call initDatabase to establish the connection
-	// and assign it to controllers.DB
 	initDatabase()
 
-	// Migra o esquema do banco de dados (cria a tabela 'goals' se não existir).
-	// O AutoMigrate adicionará colunas se a struct Goal mudar (com cuidado).
-	err := controllers.DB.AutoMigrate(&models.Goal{}) // Use controllers.DB here!
+	err := controllers.DB.AutoMigrate(&models.Goal{})
 	if err != nil {
 		log.Fatalf("Falha ao migrar o banco de dados: %v", err)
 	}
 	log.Println("Migração do banco de dados concluída com sucesso.")
 
-	// Inicializa um novo "engine" (motor) do Gin.
-	// O "Default" inclui middlewares como logger e recovery.
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
@@ -57,6 +47,7 @@ func main() {
 	// --- Rotas CRUD para Metas (Goals) ---
 
 	// GET /goals - Lista todas as metas
+	router.GET("/api/goals-info", controllers.GetGoalsInfoDashboard)
 	router.GET("/api/goals", controllers.GetGoals)
 	router.GET("/api/goals/:id", controllers.GetGoalByID)
 	router.POST("/api/goals", controllers.CreateGoal)
@@ -69,7 +60,6 @@ func main() {
 	router.Run(":8080")
 }
 
-// initDatabase inicializa a conexão com o PostgreSQL usando GORM.
 func initDatabase() {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=America/Sao_Paulo",
 		os.Getenv("DATABASE_HOST"), // Será 'db' quando rodando via Docker
@@ -78,10 +68,6 @@ func initDatabase() {
 		os.Getenv("DATABASE_NAME"),
 		os.Getenv("DATABASE_PORT"),
 	)
-
-	// Para facilitar o desenvolvimento local sem precisar configurar env vars no terminal,
-	// você pode usar valores fixos temporariamente (descomente a linha abaixo):
-	// dsn := "host=localhost user=user password=admin123 dbname=metasfin_tech port=5432 sslmode=disable TimeZone=America/Sao_Paulo"
 
 	var err error
 	// Assign the opened DB connection directly to controllers.DB
