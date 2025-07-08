@@ -19,7 +19,7 @@ RUN apk --no-cache add tzdata ca-certificates
 
 COPY --from=builder /app/api_server .
 
-EXPOSE 8080
+EXPOSE 5000
 
 # Comando para rodar o executável da sua API
 CMD ["./api_server"]

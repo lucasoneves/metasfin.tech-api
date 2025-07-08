@@ -1,26 +1,26 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"metasfin.tech/controllers"
+	"metasfin.tech/database"
 	"metasfin.tech/models"
 
+	"metasfin.tech/config"
+
 	"github.com/gin-gonic/gin"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"github.com/gin-contrib/cors"
 )
 
 func main() {
-	initDatabase()
+	database.InitDatabase()
+	config.InitGoogleOAuth()
 
-	err := controllers.DB.AutoMigrate(&models.Goal{})
+	err := database.DB.AutoMigrate(&models.Goal{})
 	if err != nil {
 		log.Fatalf("Falha ao migrar o banco de dados: %v", err)
 	}
@@ -36,6 +36,8 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	SetupAuthRoutes(router)
 
 	// Define uma rota GET para o caminho "/".
 	router.GET("/", func(c *gin.Context) {
@@ -59,21 +61,10 @@ func main() {
 	router.Run(":8080")
 }
 
-func initDatabase() {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=America/Sao_Paulo",
-		os.Getenv("DATABASE_HOST"), // Será 'db' quando rodando via Docker
-		os.Getenv("DATABASE_USER"),
-		os.Getenv("DATABASE_PASSWORD"),
-		os.Getenv("DATABASE_NAME"),
-		os.Getenv("DATABASE_PORT"),
-	)
-
-	var err error
-	// Assign the opened DB connection directly to controllers.DB
-	controllers.DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{}) // <--- THIS IS THE KEY CHANGE
-	if err != nil {
-		log.Fatalf("Falha ao conectar ao banco de dados: %v", err)
+func SetupAuthRoutes(router *gin.Engine) {
+	auth := router.Group("/auth")
+	{
+		auth.GET("/google/login", controllers.GoogleLogin) // Mais para teste/exemplo
+		auth.GET("/google/callback", controllers.GoogleAuthCallback)
 	}
-
-	log.Println("Conexão com o banco de dados estabelecida!")
 }
