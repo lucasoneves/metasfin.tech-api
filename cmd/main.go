@@ -7,9 +7,9 @@ import (
 
 	"metasfin.tech/controllers"
 	"metasfin.tech/database"
+	"metasfin.tech/initializers"
+	"metasfin.tech/middlewares"
 	"metasfin.tech/models"
-
-	"metasfin.tech/config"
 
 	"github.com/gin-gonic/gin"
 
@@ -17,10 +17,11 @@ import (
 )
 
 func main() {
-	database.InitDatabase()
-	config.InitGoogleOAuth()
 
-	err := database.DB.AutoMigrate(&models.Goal{})
+	initializers.LoadEnvs()
+	database.InitDatabase()
+
+	err := database.DB.AutoMigrate(&models.Goal{}, &models.User{})
 	if err != nil {
 		log.Fatalf("Falha ao migrar o banco de dados: %v", err)
 	}
@@ -37,8 +38,6 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	SetupAuthRoutes(router)
-
 	// Define uma rota GET para o caminho "/".
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -47,7 +46,9 @@ func main() {
 	})
 
 	// --- Rotas CRUD para Metas (Goals) ---
-
+	router.POST("/api/auth/signup", controllers.CreateUser)
+	router.POST("/api/auth/login", controllers.Login)
+	router.GET("/user/profile", middlewares.CheckAuth, controllers.GetUserProfile)
 	router.GET("/api/goals", controllers.GetGoals)
 	router.GET("/api/goals/:id", controllers.GetGoalByID)
 	router.POST("/api/goals", controllers.CreateGoal)
@@ -59,12 +60,4 @@ func main() {
 	router.GET("/api/goals/info", controllers.GetGoalsInfoDashboard)
 	log.Printf("Servidor Gin rodando na porta :8080")
 	router.Run(":8080")
-}
-
-func SetupAuthRoutes(router *gin.Engine) {
-	auth := router.Group("/auth")
-	{
-		auth.GET("/google/login", controllers.GoogleLogin) // Mais para teste/exemplo
-		auth.GET("/google/callback", controllers.GoogleAuthCallback)
-	}
 }
