@@ -79,7 +79,7 @@ func Login(c *gin.Context) {
 		"exp": time.Now().Add(time.Hour * 24).Unix(),
 	})
 
-	token, err := generateToken.SignedString([]byte(os.Getenv("SECRET")))
+	token, err := generateToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to generate token"})
@@ -87,7 +87,7 @@ func Login(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"token": token,
-		"user":  userFound.Username,
+		"user":  userFound,
 	})
 }
 

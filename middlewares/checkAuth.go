@@ -3,71 +3,43 @@ package middlewares
 import (
 	"fmt"
 
-	"metasfin.tech/database"
-	"metasfin.tech/models"
-
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 )
 
 func CheckAuth(c *gin.Context) {
-
 	authHeader := c.GetHeader("Authorization")
-
 	if authHeader == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	authToken := strings.Split(authHeader, " ")
-	if len(authToken) != 2 || authToken[0] != "Bearer" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	tokenString := authToken[1]
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(os.Getenv("SECRET")), nil
-	})
-	if err != nil || !token.Valid {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token não fornecido"})
 		c.Abort()
 		return
 	}
 
-	if float64(time.Now().Unix()) > claims["exp"].(float64) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "token expired"})
-		c.AbortWithStatus(http.StatusUnauthorized)
+	tokenString := strings.Replace(authHeader, "Bearer ", "", 1) // Extrai o token removendo "Bearer "
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("método de assinatura inválido: %v", token.Header["alg"])
+		}
+		return []byte(os.Getenv("JWT_SECRET")), nil // Substitua "your-secret-key" pela sua chave secreta
+	})
+
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+		c.Abort()
 		return
 	}
 
-	var user models.User
-	database.DB.Where("ID=?", claims["id"]).Find(&user)
-
-	if user.ID == 0 {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		userID := uint(claims["id"].(float64)) // Extrai o ID do usuário das claims (atenção ao tipo!)
+		c.Set("userID", userID)                // Define o userID no contexto
+		c.Next()
+	} else {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+		c.Abort()
 	}
-
-	c.Set("currentUser", user)
-
-	c.Next()
-
 }
