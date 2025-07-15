@@ -42,7 +42,15 @@ func CreateGoal(c *gin.Context) {
 
 func GetGoals(c *gin.Context) {
 	var goals []models.Goal
-	result := database.DB.Find(&goals)
+
+	// MELHORIA DE SEGURANÇA: Filtrar metas pelo ID do usuário autenticado.
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário não autenticado"})
+		return
+	}
+
+	result := database.DB.Where("user_id = ?", userID).Find(&goals)
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar metas"})
 		return
@@ -59,6 +67,14 @@ func GetGoalByID(c *gin.Context) {
 	}
 
 	var goal models.Goal
+
+	// MELHORIA DE SEGURANÇA: Obter o ID do usuário para verificar a propriedade.
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário não autenticado"})
+		return
+	}
+
 	result := database.DB.First(&goal, id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -66,6 +82,12 @@ func GetGoalByID(c *gin.Context) {
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar meta"})
 		}
+		return
+	}
+
+	// MELHORIA DE SEGURANÇA: Verificar se a meta pertence ao usuário autenticado.
+	if goal.UserID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso negado"})
 		return
 	}
 	c.JSON(http.StatusOK, goal)
@@ -76,6 +98,13 @@ func UpdateGoal(c *gin.Context) {
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		return
+	}
+
+	// MELHORIA DE SEGURANÇA: Obter o ID do usuário para verificar a propriedade.
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário não autenticado"})
 		return
 	}
 
@@ -90,6 +119,12 @@ func UpdateGoal(c *gin.Context) {
 		return
 	}
 
+	// MELHORIA DE SEGURANÇA: Verificar se a meta pertence ao usuário autenticado.
+	if existingGoal.UserID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso negado"})
+		return
+	}
+
 	var updatedGoalData models.Goal
 	if err := c.ShouldBindJSON(&updatedGoalData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -100,7 +135,7 @@ func UpdateGoal(c *gin.Context) {
 	existingGoal.Description = updatedGoalData.Description
 	existingGoal.Balance = updatedGoalData.Balance
 	existingGoal.TargetValue = updatedGoalData.TargetValue
-	existingGoal.UserID = updatedGoalData.UserID
+	// O UserID não deve ser alterado.
 
 	result = database.DB.Save(&existingGoal)
 	if result.Error != nil {
@@ -119,8 +154,15 @@ func DeleteGoal(c *gin.Context) {
 		return
 	}
 
-	var goal models.Goal
-	result := database.DB.Delete(&goal, id)
+	// MELHORIA DE SEGURANÇA: Obter o ID do usuário para garantir que ele só delete suas próprias metas.
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário não autenticado"})
+		return
+	}
+
+	// Deleta a meta apenas se o ID e o UserID corresponderem.
+	result := database.DB.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Goal{})
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao deletar meta"})
 		return
@@ -147,6 +189,13 @@ func AddMoneyToGoal(c *gin.Context) {
 		return
 	}
 
+	// MELHORIA DE SEGURANÇA: Obter o ID do usuário para verificar a propriedade.
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário não autenticado"})
+		return
+	}
+
 	var existingGoal models.Goal
 	if result := database.DB.First(&existingGoal, uint(id)); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -154,6 +203,12 @@ func AddMoneyToGoal(c *gin.Context) {
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar meta"})
 		}
+		return
+	}
+
+	// MELHORIA DE SEGURANÇA: Verificar se a meta pertence ao usuário autenticado.
+	if existingGoal.UserID != userID.(uint) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Acesso negado"})
 		return
 	}
 

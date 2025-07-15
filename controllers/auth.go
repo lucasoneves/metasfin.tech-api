@@ -23,8 +23,8 @@ func CreateUser(c *gin.Context) {
 	var userFound models.User
 	database.DB.Where("username=?", authInput.Username).Find(&userFound)
 
-	if userFound.Name == authInput.Username {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "username already used"})
+	if userFound.Username == authInput.Username {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "username already exists"})
 		return
 	}
 	var emailFound models.User
@@ -42,7 +42,7 @@ func CreateUser(c *gin.Context) {
 	}
 
 	user := models.User{
-		Name:     authInput.Username,
+		Username: authInput.Username,
 		Email:    authInput.Email,
 		Password: string(passwordHash),
 	}
@@ -54,7 +54,7 @@ func CreateUser(c *gin.Context) {
 
 func Login(c *gin.Context) {
 
-	var authInput models.AuthInput
+	var authInput models.LoginInput
 
 	if err := c.ShouldBindJSON(&authInput); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -62,7 +62,7 @@ func Login(c *gin.Context) {
 	}
 
 	var userFound models.User
-	database.DB.Where("username=?", authInput.Username).Find(&userFound)
+	database.DB.Where("email=?", authInput.Email).Find(&userFound)
 
 	if userFound.ID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "user not found"})
@@ -87,6 +87,7 @@ func Login(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"token": token,
+		"user":  userFound.Username,
 	})
 }
 
