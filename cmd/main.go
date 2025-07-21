@@ -48,7 +48,7 @@ func main() {
 	// --- Rotas CRUD para Metas (Goals) ---
 	router.POST("/api/auth/signup", controllers.CreateUser)
 	router.POST("/api/auth/login", controllers.Login)
-	router.GET("/user/profile", middlewares.CheckAuth, controllers.GetUserProfile)
+	router.GET("/api/auth/profile", middlewares.CheckAuth, controllers.GetUserProfile)
 	router.GET("/api/goals", middlewares.CheckAuth, controllers.GetGoals)
 	router.GET("/api/goals/:id", middlewares.CheckAuth, controllers.GetGoalByID)
 	router.POST("/api/goals", middlewares.CheckAuth, controllers.CreateGoal)
@@ -57,7 +57,7 @@ func main() {
 
 	router.POST("/api/goals/deposit/:id", middlewares.CheckAuth, controllers.AddMoneyToGoal)
 
-	router.GET("/api/goals/info", controllers.GetGoalsInfoDashboard)
+	router.GET("/api/goals/info", middlewares.CheckAuth, controllers.GetGoalsInfoDashboard)
 	log.Printf("Servidor Gin rodando na porta :8080")
 	router.Run(":8080")
 }
